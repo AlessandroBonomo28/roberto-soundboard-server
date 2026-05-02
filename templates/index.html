@@ -13,6 +13,7 @@
         .btn-save { background: #2980b9; color: white; }
         .btn-rename { background: #f39c12; color: white; }
         .btn-delete { background: #c0392b; color: white; }
+        .btn-upload { background: #8e44ad; color: white; padding: 10px 20px; font-weight: bold;}
         button:hover { opacity: 0.8; }
         
         .item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f0f0f0; gap: 10px; }
@@ -22,6 +23,10 @@
         .rename-form { display: inline-flex; gap: 5px; }
         .rename-input { padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
         .info { font-size: 13px; color: #7f8c8d; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        /* Stili per l'area di caricamento */
+        .upload-area { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: space-between;}
+        input[type="file"] { font-size: 15px; }
     </style>
 </head>
 <body>
@@ -51,6 +56,17 @@
 
     <div class="section">
         <h3>Archivio Salvati</h3>
+        
+        <!-- Nuova sezione di Upload -->
+        <div class="upload-area">
+            <span><strong>Carica dal tuo PC:</strong></span>
+            <!-- enctype="multipart/form-data" è essenziale per il caricamento file -->
+            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px;">
+                <input type="file" name="audio_file" accept="audio/*" required>
+                <button type="submit" class="btn-upload">Carica nel Server</button>
+            </form>
+        </div>
+
         {% for file in saved_files %}
         <div class="item">
             <div style="flex-grow: 1;">
