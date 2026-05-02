@@ -9,7 +9,7 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-
+current_audio_process = None
 # Configurazione Cartelle
 DOWNLOAD_FOLDER = 'downloads'
 SAVED_FOLDER = 'saved'
@@ -98,33 +98,53 @@ def generate_audio():
 
 @app.route('/play_hw/<folder>/<filename>')
 def play_hw(folder, filename):
+    global current_audio_process # Accediamo alla variabile globale
+    
     target = DOWNLOAD_FOLDER if folder == 'downloads' else SAVED_FOLDER
     filepath = os.path.normpath(os.path.join(target, filename))
     
     if not os.path.exists(filepath):
         return '', 404
 
+    # --- LOGICA DI INTERRUZIONE ---
+    # Se esiste un processo ed è ancora in esecuzione (poll() == None), lo terminiamo
+    if current_audio_process is not None and current_audio_process.poll() is None:
+        try:
+            print("Interruzione riproduzione precedente...")
+            current_audio_process.terminate() # Invia SIGTERM
+            current_audio_process.wait(timeout=2) # Attende che si chiuda davvero
+        except Exception as e:
+            print(f"Errore durante l'interruzione: {e}")
+            current_audio_process.kill() # Forza la chiusura se terminate non basta
+
     current_os = platform.system()
-    # Ottiene l'estensione del file in minuscolo (es: '.mp3', '.wav')
     ext = os.path.splitext(filepath)[1].lower()
 
     if current_os == "Linux":
-        # Selettore dinamico del player in base all'estensione
         if ext == '.mp3':
             cmd = ["mpg123", "-a", "plughw:CARD=seeed2micvoicec,DEV=0", filepath]
         else:
             cmd = ["aplay", "-D", "plughw:CARD=seeed2micvoicec,DEV=0", filepath]
     else:
-        # NOTA: Windows Media.SoundPlayer supporta solo i file .wav.
-        # Se provi a suonare un mp3 da Windows, lancerà probabilmente un'eccezione, 
-        # ma questo progetto gira principalmente su Raspberry (Linux).
-        cmd = ["powershell", "-c", f"(New-Object Media.SoundPlayer '{filepath}').PlaySync()"]
+        # Nota: Powershell PlaySync() è bloccante, meglio usare un comando che non aspetti la fine
+        # o accettare che su Windows il comportamento possa differire.
+        cmd = ["powershell", "-c", f"(New-Object Media.SoundPlayer '{filepath}').Play()"]
 
     try:
-        subprocess.Popen(cmd)
+        # Avviamo il nuovo processo e salviamo il riferimento
+        current_audio_process = subprocess.Popen(cmd)
+        print(f"Inizio riproduzione: {filename}")
     except Exception as e:
         print(f"Errore Play: {e}")
             
+    return '', 204
+
+@app.route('/stop_audio')
+def stop_audio():
+    global current_audio_process
+    if current_audio_process is not None and current_audio_process.poll() is None:
+        current_audio_process.terminate()
+        print("Audio stoppato manualmente.")
     return '', 204
 
 @app.route('/save/<filename>', methods=['POST'])
