@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTS Audio Control Panel</title>
+    <title>Roberto soundboard server</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -19,7 +19,7 @@
         body { 
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             max-width: 1000px; 
-            margin: 40px auto; 
+            margin: 20px auto; 
             background-color: var(--bg); 
             color: var(--primary);
             padding: 0 20px;
@@ -29,109 +29,105 @@
 
         .section { 
             background: white; 
-            padding: 25px; 
+            padding: 20px; 
             border-radius: 12px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
-            margin-bottom: 30px; 
+            margin-bottom: 20px; 
         }
 
-        /* Form Generazione */
+        /* Settings Style */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+        .settings-grid input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .settings-grid label {
+            display: block;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
         textarea { 
             width: 100%; 
-            height: 100px; 
+            height: 80px; 
             padding: 15px; 
             border: 2px solid #ddd; 
             border-radius: 8px; 
             box-sizing: border-box; 
             font-size: 16px;
             resize: vertical;
-            transition: border-color 0.3s;
         }
-        textarea:focus { border-color: var(--info); outline: none; }
 
-        /* Bottoni */
         button, .btn-link { 
-            cursor: pointer; 
-            border: none; 
-            border-radius: 6px; 
-            padding: 10px 18px; 
-            font-weight: 600;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            font-size: 14px;
+            cursor: pointer; border: none; border-radius: 6px; 
+            padding: 10px 15px; font-weight: 600; transition: all 0.2s;
+            display: inline-flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 13px;
         }
-        button:hover, .btn-link:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        .btn-generate { background: var(--success); color: white; width: 100%; margin-top: 15px; font-size: 18px; }
+        .btn-generate { background: var(--success); color: white; width: 100%; margin-top: 10px; }
         .btn-save { background: var(--info); color: white; }
         .btn-rename { background: var(--warning); color: white; }
         .btn-delete { background: var(--danger); color: white; }
         .btn-hw { background: var(--hw-color); color: white; }
         .btn-upload { background: var(--secondary); color: white; }
 
-        /* Lista Item */
         .item { 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            padding: 15px; 
-            border-bottom: 1px solid #f0f0f0; 
-            gap: 15px;
-            flex-wrap: wrap;
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 12px; border-bottom: 1px solid #f0f0f0; gap: 10px; flex-wrap: wrap;
         }
-        .item:last-child { border-bottom: none; }
         
-        .info-text { 
-            flex: 1; 
-            min-width: 200px;
-            font-size: 14px; 
-            color: #7f8c8d; 
-            word-break: break-all;
-        }
+        .info-text { flex: 1; min-width: 150px; font-size: 14px; color: #7f8c8d; word-break: break-all; }
+        .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        audio { height: 30px; }
 
-        .controls { 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            flex-wrap: wrap;
-        }
-
-        audio { height: 35px; border-radius: 8px; }
-
-        /* Sezione Upload */
         .upload-box {
-            background: #f8f9fa;
-            border: 2px dashed #cbd5e0;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
+            background: #f8f9fa; border: 1px dashed #cbd5e0; padding: 15px;
+            border-radius: 8px; margin-bottom: 15px; display: flex;
+            align-items: center; justify-content: space-between; gap: 10px;
         }
 
-        .rename-form { display: flex; gap: 8px; flex: 1; }
-        .rename-input { 
-            padding: 8px; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            flex: 1;
-        }
+        .rename-form { display: flex; gap: 5px; flex: 1; }
+        .rename-input { padding: 6px; border: 1px solid #ccc; border-radius: 4px; flex: 1; }
 
         @media (max-width: 600px) {
+            .settings-grid { grid-template-columns: 1fr; }
             .item { flex-direction: column; align-items: stretch; }
-            .controls { justify-content: center; }
         }
     </style>
 </head>
 <body>
 
+    <!-- SEZIONE IMPOSTAZIONI -->
     <div class="section">
-        <h2>Roberto soundboard server</h2>
+        <h3>⚙️ Configurazione Backend</h3>
+        <form action="/update_settings" method="post" class="settings-grid">
+            <div>
+                <label>IP Backend</label>
+                <input type="text" name="ip" value="{{ settings.ip }}" placeholder="es. localhost">
+            </div>
+            <div>
+                <label>Porta</label>
+                <input type="text" name="port" value="{{ settings.port }}" placeholder="es. 8087">
+            </div>
+            <div>
+                <label>Token</label>
+                <input type="text" name="token" value="{{ settings.token }}" placeholder="es. token1">
+            </div>
+            <button type="submit" class="btn-upload">Salva Config</button>
+        </form>
+    </div>
+
+    <div class="section">
+        <h2>🎙️ Roberto soundboard server</h2>
         <form action="/generate" method="post">
             <textarea name="text" placeholder="Scrivi qui la frase da inviare agli altoparlanti..." required></textarea>
             <button type="submit" class="btn-generate">Invia e Genera Audio</button>
@@ -139,18 +135,16 @@
     </div>
 
     <div class="section">
-        <h3>Suoni recenti (Queue: 3)</h3>
+        <h3>🕒 Suoni recenti (Queue: {{ downloads|length }}/3)</h3>
         {% if downloads %}
             {% for file in downloads %}
             <div class="item">
                 <span class="info-text"><strong>{{ file.name }}</strong></span>
                 <div class="controls">
                     <audio controls src="{{ url_for('serve_file', folder='downloads', filename=file.name) }}"></audio>
-                    
                     <button type="button" class="btn-hw" onclick="fetch('{{ url_for('play_hw', folder='downloads', filename=file.name) }}')">
                         Riproduci su server
                     </button>
-
                     <form action="{{ url_for('save_file', filename=file.name) }}" method="post" style="display:inline;">
                         <button type="submit" class="btn-save">Salva</button>
                     </form>
@@ -158,18 +152,15 @@
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #999; font-style: italic;">Nessun audio generato recentemente.</p>
+            <p style="color: #999; font-style: italic;">Nessun audio generato.</p>
         {% endif %}
     </div>
 
     <div class="section">
-        <h3>Suoni Salvati (Solo .wav)</h3>
-        
-        <!-- Form di Caricamento File - AGGIORNATO PER SOLO .WAV -->
+        <h3>📁 Suoni Salvati (.wav)</h3>
         <div class="upload-box">
-            <div style="font-weight: bold; color: var(--secondary);">Carica file .wav dal PC:</div>
-            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: center;">
-                <!-- accept=".wav" limita la scelta del file nel browser -->
+            <div style="font-weight: bold; color: var(--secondary);">Upload .wav:</div>
+            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 8px;">
                 <input type="file" name="audio_file" accept=".wav" required>
                 <button type="submit" class="btn-upload">Carica</button>
             </form>
@@ -186,17 +177,15 @@
                 </div>
                 <div class="controls">
                     <audio controls src="{{ url_for('serve_file', folder='saved', filename=file.name) }}"></audio>
-                    
                     <button type="button" class="btn-hw" onclick="fetch('{{ url_for('play_hw', folder='saved', filename=file.name) }}')">
                         Riproduci su server
                     </button>
-
                     <a href="{{ url_for('delete_saved', filename=file.name) }}" class="btn-link btn-delete">Elimina</a>
                 </div>
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #999; font-style: italic;">L'archivio è vuoto o non contiene file .wav.</p>
+            <p style="color: #999; font-style: italic;">Archivio vuoto.</p>
         {% endif %}
     </div>
 
