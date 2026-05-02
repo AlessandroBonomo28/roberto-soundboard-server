@@ -2,8 +2,9 @@ import os
 import requests
 import time
 import shutil
+import subprocess  # <--- Nuovo import per i comandi shell
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-from werkzeug.utils import secure_filename # Utile per pulire i nomi dei file caricati
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -11,24 +12,20 @@ DOWNLOAD_FOLDER = 'downloads'
 SAVED_FOLDER = 'saved'
 TTS_URL = "http://localhost:8087/audio"
 TOKEN = "token1"
+QUEUE_LEN = 3
+AUDIO_EXTENSIONS = ('.wav')#('.wav', '.mp3', '.ogg', '.m4a')
 
-# Creazione cartelle se non esistono
+# Configurazione cartelle
 for folder in [DOWNLOAD_FOLDER, SAVED_FOLDER]:
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-QUEUE_LEN=3
-# Estensioni audio supportate (utile se carichi mp3 invece di wav)
-AUDIO_EXTENSIONS = ('.wav', '.mp3', '.ogg', '.m4a')
-
 def clean_old_downloads():
-    """Mantiene solo i QUEUE_LEN file più recenti nella cartella downloads."""
     files = []
     for f in os.listdir(DOWNLOAD_FOLDER):
         if f.endswith(".wav"):
             path = os.path.join(DOWNLOAD_FOLDER, f)
             files.append((path, os.path.getctime(path)))
-    
     if len(files) > QUEUE_LEN:
         files.sort(key=lambda x: x[1])
         for i in range(len(files) - QUEUE_LEN):
@@ -36,30 +33,66 @@ def clean_old_downloads():
 
 @app.route('/')
 def index():
-    # Lista download (max QUEUE_LEN)
-    downloads = []
-    for f in os.listdir(DOWNLOAD_FOLDER):
-        if f.endswith(".wav"):
-            downloads.append({"name": f, "time": os.path.getctime(os.path.join(DOWNLOAD_FOLDER, f))})
-    downloads = sorted(downloads, key=lambda x: x['time'], reverse=True)
+    downloads = [{"name": f, "time": os.path.getctime(os.path.join(DOWNLOAD_FOLDER, f))} 
+                 for f in os.listdir(DOWNLOAD_FOLDER) if f.endswith(".wav")]
+    saved = [{"name": f, "time": os.path.getctime(os.path.join(SAVED_FOLDER, f))} 
+             for f in os.listdir(SAVED_FOLDER) if f.lower().endswith(AUDIO_EXTENSIONS)]
+    
+    return render_template('index.html', 
+                           downloads=sorted(downloads, key=lambda x: x['time'], reverse=True), 
+                           saved_files=sorted(saved, key=lambda x: x['time'], reverse=True))
 
-    # Lista salvati (ora legge varie estensioni audio)
-    saved = []
-    for f in os.listdir(SAVED_FOLDER):
-        if f.lower().endswith(AUDIO_EXTENSIONS):
-            saved.append({"name": f, "time": os.path.getctime(os.path.join(SAVED_FOLDER, f))})
-    saved = sorted(saved, key=lambda x: x['time'], reverse=True)
+import platform # Aggiungi questo import in alto
 
-    return render_template('index.html', downloads=downloads, saved_files=saved)
+@app.route('/play_hw/<folder>/<filename>')
+def play_hw(folder, filename):
+    target = DOWNLOAD_FOLDER if folder == 'downloads' else SAVED_FOLDER
+    filepath = os.path.normpath(os.path.join(target, filename)) # Sistema i separatori / o \
+    
+    if not os.path.exists(filepath):
+        print(f"Errore: Il file {filepath} non esiste!")
+        return '', 404
+
+    # Rileviamo il sistema operativo
+    current_os = platform.system()
+    
+    if current_os == "Linux":
+        # Se è un MP3, aplay non funzionerà. Serve un altro player come mpg123
+        if filename.lower().endswith(".mp3"):
+            cmd = ["mpg123", filepath]
+        else:
+            # Tuo comando originale per la scheda Seeed
+            cmd = [
+                "aplay", 
+                "-D", "plughw:CARD=seeed2micvoicec,DEV=0", 
+                "-r", "22050", 
+                "-c", "1", 
+                "-f", "S16_LE", 
+                "-t", "raw", 
+                filepath
+            ]
+    else:
+        # Siamo su Windows (TEST): usiamo il comando 'start' per aprire il player di sistema
+        # Questo serve solo per vedere se il pulsante funziona mentre programmi sul PC
+        print(f"Running on Windows: Simulo riproduzione per {filename}")
+        cmd = ["powershell", "-c", f"(New-Object Media.SoundPlayer '{filepath}').PlaySync()"]
+        # Nota: il comando powershell sopra funziona solo per i .wav
+
+    try:
+        subprocess.Popen(cmd)
+        print(f"Comando inviato: {' '.join(cmd)}")
+    except Exception as e:
+        print(f"Errore durante l'esecuzione del comando: {e}")
+            
+    return '', 204
+# ... (restanti rotte generate, save, upload, rename, delete rimangono invariate) ...
 
 @app.route('/generate', methods=['POST'])
 def generate_audio():
     text = request.form.get('text')
     if text:
-        timestamp = time.strftime("%Y%m%d-%H%M%S")
-        filename = f"audio_{timestamp}.wav"
+        filename = f"audio_{time.strftime('%Y%m%d-%H%M%S')}.wav"
         filepath = os.path.join(DOWNLOAD_FOLDER, filename)
-        
         try:
             response = requests.get(TTS_URL, params={"token": TOKEN, "text": text}, timeout=30)
             if response.status_code in [200, 202]:
@@ -79,39 +112,25 @@ def save_file(filename):
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    """Riceve un file dal PC e lo salva nella cartella saved"""
-    if 'audio_file' not in request.files:
-        return redirect(url_for('index'))
-    
-    file = request.files['audio_file']
-    if file.filename == '':
-        return redirect(url_for('index'))
-        
-    if file:
-        # secure_filename rimuove spazi e caratteri strani dal nome
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(SAVED_FOLDER, filename))
-        
+    if 'audio_file' in request.files:
+        file = request.files['audio_file']
+        if file.filename != '':
+            file.save(os.path.join(SAVED_FOLDER, secure_filename(file.filename)))
     return redirect(url_for('index'))
 
 @app.route('/rename_saved/<old_name>', methods=['POST'])
 def rename_saved(old_name):
     new_name = request.form.get('new_name').strip()
     if new_name:
-        # Recupero l'estensione originale del file (es: .wav o .mp3)
         _, ext = os.path.splitext(old_name)
-        # Se l'utente non ha scritto l'estensione, gliela riaggiungo in automatico
-        if not os.path.splitext(new_name)[1]:
-            new_name += ext
-            
+        if not os.path.splitext(new_name)[1]: new_name += ext
         os.rename(os.path.join(SAVED_FOLDER, old_name), os.path.join(SAVED_FOLDER, new_name))
     return redirect(url_for('index'))
 
 @app.route('/delete_saved/<filename>')
 def delete_saved(filename):
     path = os.path.join(SAVED_FOLDER, filename)
-    if os.path.exists(path):
-        os.remove(path)
+    if os.path.exists(path): os.remove(path)
     return redirect(url_for('index'))
 
 @app.route('/file/<folder>/<filename>')
@@ -120,4 +139,4 @@ def serve_file(folder, filename):
     return send_from_directory(target, filename)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, host='0.0.0.0') # host 0.0.0.0 per vederlo in rete

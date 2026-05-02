@@ -2,85 +2,202 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>TTS Audio Manager Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Audio Control Panel</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 40px auto; background-color: #eef2f7; color: #333; }
-        .section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        h2, h3 { color: #2c3e50; margin-top: 0; }
-        textarea { width: 100%; height: 80px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 15px; transition: 0.3s; }
-        .btn-generate { background: #27ae60; color: white; width: 100%; margin-top: 10px; font-size: 18px; }
-        .btn-save { background: #2980b9; color: white; }
-        .btn-rename { background: #f39c12; color: white; }
-        .btn-delete { background: #c0392b; color: white; }
-        .btn-upload { background: #8e44ad; color: white; padding: 10px 20px; font-weight: bold;}
-        button:hover { opacity: 0.8; }
-        
-        .item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f0f0f0; gap: 10px; }
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --success: #27ae60;
+            --info: #2980b9;
+            --warning: #f39c12;
+            --danger: #c0392b;
+            --hw-color: #e67e22;
+            --bg: #eef2f7;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            max-width: 1000px; 
+            margin: 40px auto; 
+            background-color: var(--bg); 
+            color: var(--primary);
+            padding: 0 20px;
+        }
+
+        h2, h3 { margin-top: 0; color: var(--secondary); }
+
+        .section { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+            margin-bottom: 30px; 
+        }
+
+        /* Form Generazione */
+        textarea { 
+            width: 100%; 
+            height: 100px; 
+            padding: 15px; 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 16px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        textarea:focus { border-color: var(--info); outline: none; }
+
+        /* Bottoni */
+        button, .btn-link { 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 6px; 
+            padding: 10px 18px; 
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        button:hover, .btn-link:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .btn-generate { background: var(--success); color: white; width: 100%; margin-top: 15px; font-size: 18px; }
+        .btn-save { background: var(--info); color: white; }
+        .btn-rename { background: var(--warning); color: white; }
+        .btn-delete { background: var(--danger); color: white; }
+        .btn-hw { background: var(--hw-color); color: white; }
+        .btn-upload { background: var(--secondary); color: white; }
+
+        /* Lista Item */
+        .item { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 15px; 
+            border-bottom: 1px solid #f0f0f0; 
+            gap: 15px;
+            flex-wrap: wrap;
+        }
         .item:last-child { border-bottom: none; }
-        .controls { display: flex; align-items: center; gap: 8px; }
-        audio { height: 35px; }
-        .rename-form { display: inline-flex; gap: 5px; }
-        .rename-input { padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
-        .info { font-size: 13px; color: #7f8c8d; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
-        /* Stili per l'area di caricamento */
-        .upload-area { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: space-between;}
-        input[type="file"] { font-size: 15px; }
+        .info-text { 
+            flex: 1; 
+            min-width: 200px;
+            font-size: 14px; 
+            color: #7f8c8d; 
+            word-break: break-all;
+        }
+
+        .controls { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            flex-wrap: wrap;
+        }
+
+        audio { height: 35px; border-radius: 8px; }
+
+        /* Sezione Upload */
+        .upload-box {
+            background: #f8f9fa;
+            border: 2px dashed #cbd5e0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .rename-form { display: flex; gap: 8px; flex: 1; }
+        .rename-input { 
+            padding: 8px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            flex: 1;
+        }
+
+        @media (max-width: 600px) {
+            .item { flex-direction: column; align-items: stretch; }
+            .controls { justify-content: center; }
+        }
     </style>
 </head>
 <body>
 
     <div class="section">
-        <h2>Generatore Audio</h2>
+        <h2>🎙️ Generatore Audio TTS</h2>
         <form action="/generate" method="post">
-            <textarea name="text" placeholder="Cosa devo dire?" required></textarea>
-            <button type="submit" class="btn-generate">Genera ed invia</button>
+            <textarea name="text" placeholder="Scrivi qui la frase da inviare agli altoparlanti..." required></textarea>
+            <button type="submit" class="btn-generate">Invia e Genera Audio</button>
         </form>
     </div>
 
     <div class="section">
-        <h3>Ultimi Download</h3>
-        {% for file in downloads %}
-        <div class="item">
-            <span class="info">{{ file.name }}</span>
-            <div class="controls">
-                <audio controls src="{{ url_for('serve_file', folder='downloads', filename=file.name) }}"></audio>
-                <form action="{{ url_for('save_file', filename=file.name) }}" method="post">
-                    <button type="submit" class="btn-save">Salva →</button>
-                </form>
+        <h3>🕒 Ultimi Download (Queue: 3)</h3>
+        {% if downloads %}
+            {% for file in downloads %}
+            <div class="item">
+                <span class="info-text"><strong>{{ file.name }}</strong></span>
+                <div class="controls">
+                    <audio controls src="{{ url_for('serve_file', folder='downloads', filename=file.name) }}"></audio>
+                    
+                    <button type="button" class="btn-hw" onclick="fetch('{{ url_for('play_hw', folder='downloads', filename=file.name) }}')">
+                        Play HW 🔊
+                    </button>
+
+                    <form action="{{ url_for('save_file', filename=file.name) }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn-save">Salva ↓</button>
+                    </form>
+                </div>
             </div>
-        </div>
-        {% endfor %}
+            {% endfor %}
+        {% else %}
+            <p style="color: #999; font-style: italic;">Nessun audio generato recentemente.</p>
+        {% endif %}
     </div>
 
     <div class="section">
-        <h3>Archivio Salvati</h3>
+        <h3>📁 Archivio Salvati (Solo .wav)</h3>
         
-        <!-- Nuova sezione di Upload -->
-        <div class="upload-area">
-            <span><strong>Carica dal tuo PC:</strong></span>
-            <!-- enctype="multipart/form-data" è essenziale per il caricamento file -->
-            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px;">
-                <input type="file" name="audio_file" accept="audio/*" required>
-                <button type="submit" class="btn-upload">Carica nel Server</button>
+        <!-- Form di Caricamento File - AGGIORNATO PER SOLO .WAV -->
+        <div class="upload-box">
+            <div style="font-weight: bold; color: var(--secondary);">Carica file .wav dal PC:</div>
+            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: center;">
+                <!-- accept=".wav" limita la scelta del file nel browser -->
+                <input type="file" name="audio_file" accept=".wav" required>
+                <button type="submit" class="btn-upload">Upload ⬆️</button>
             </form>
         </div>
 
-        {% for file in saved_files %}
-        <div class="item">
-            <div style="flex-grow: 1;">
-                <form class="rename-form" action="{{ url_for('rename_saved', old_name=file.name) }}" method="post">
-                    <input type="text" name="new_name" class="rename-input" value="{{ file.name }}">
-                    <button type="submit" class="btn-rename">Rinomina</button>
-                </form>
+        {% if saved_files %}
+            {% for file in saved_files %}
+            <div class="item">
+                <div class="rename-form">
+                    <form action="{{ url_for('rename_saved', old_name=file.name) }}" method="post" style="display: contents;">
+                        <input type="text" name="new_name" class="rename-input" value="{{ file.name }}">
+                        <button type="submit" class="btn-rename">Rinomina</button>
+                    </form>
+                </div>
+                <div class="controls">
+                    <audio controls src="{{ url_for('serve_file', folder='saved', filename=file.name) }}"></audio>
+                    
+                    <button type="button" class="btn-hw" onclick="fetch('{{ url_for('play_hw', folder='saved', filename=file.name) }}')">
+                        Play HW 🔊
+                    </button>
+
+                    <a href="{{ url_for('delete_saved', filename=file.name) }}" class="btn-link btn-delete">Elimina</a>
+                </div>
             </div>
-            <div class="controls">
-                <audio controls src="{{ url_for('serve_file', folder='saved', filename=file.name) }}"></audio>
-                <a href="{{ url_for('delete_saved', filename=file.name) }}" class="btn-delete" style="text-decoration: none; padding: 6px 12px; font-size: 13px;">Elimina</a>
-            </div>
-        </div>
-        {% endfor %}
+            {% endfor %}
+        {% else %}
+            <p style="color: #999; font-style: italic;">L'archivio è vuoto o non contiene file .wav.</p>
+        {% endif %}
     </div>
 
 </body>
