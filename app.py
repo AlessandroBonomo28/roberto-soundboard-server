@@ -103,7 +103,7 @@ def play_hw(folder, filename):
 
     current_os = platform.system()
     if current_os == "Linux":
-        cmd = ["aplay", "-D", "plughw:CARD=seeed2micvoicec,DEV=0", "-r", "22050", "-c", "1", "-f", "S16_LE", "-t", "raw", filepath]
+        cmd = ["aplay", "-D", "plughw:CARD=seeed2micvoicec,DEV=0", filepath]
     else:
         cmd = ["powershell", "-c", f"(New-Object Media.SoundPlayer '{filepath}').PlaySync()"]
 

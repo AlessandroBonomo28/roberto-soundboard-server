@@ -13,6 +13,7 @@
             --warning: #f39c12;
             --danger: #c0392b;
             --hw-color: #e67e22;
+            --download-color: #16a085; /* Nuovo colore per il download */
             --bg: #eef2f7;
         }
 
@@ -71,7 +72,7 @@
             display: inline-flex; align-items: center; justify-content: center;
             text-decoration: none; font-size: 13px;
         }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:hover, .btn-link:hover { opacity: 0.9; transform: translateY(-1px); }
 
         .btn-generate { background: var(--success); color: white; width: 100%; margin-top: 10px; }
         .btn-save { background: var(--info); color: white; }
@@ -79,6 +80,7 @@
         .btn-delete { background: var(--danger); color: white; }
         .btn-hw { background: var(--hw-color); color: white; }
         .btn-upload { background: var(--secondary); color: white; }
+        .btn-download { background: var(--download-color); color: white; }
 
         .item { 
             display: flex; align-items: center; justify-content: space-between; 
@@ -142,9 +144,16 @@
                 <span class="info-text"><strong>{{ file.name }}</strong></span>
                 <div class="controls">
                     <audio controls src="{{ url_for('serve_file', folder='downloads', filename=file.name) }}"></audio>
+                    
                     <button type="button" class="btn-hw" onclick="fetch('{{ url_for('play_hw', folder='downloads', filename=file.name) }}')">
-                        Riproduci su server
+                        Server 🔊
                     </button>
+
+                    <!-- Pulsante Download Locale -->
+                    <a href="{{ url_for('serve_file', folder='downloads', filename=file.name) }}" download class="btn-link btn-download">
+                        Download ⬇️
+                    </a>
+
                     <form action="{{ url_for('save_file', filename=file.name) }}" method="post" style="display:inline;">
                         <button type="submit" class="btn-save">Salva</button>
                     </form>
@@ -152,15 +161,16 @@
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #999; font-style: italic;">Nessun audio generato.</p>
+            <p style="color: #999; font-style: italic;">Nessun audio generato recentemente.</p>
         {% endif %}
     </div>
 
     <div class="section">
         <h3>📁 Suoni Salvati (.wav)</h3>
+        
         <div class="upload-box">
-            <div style="font-weight: bold; color: var(--secondary);">Upload .wav:</div>
-            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 8px;">
+            <div style="font-weight: bold; color: var(--secondary);">Carica file .wav:</div>
+            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: center;">
                 <input type="file" name="audio_file" accept=".wav" required>
                 <button type="submit" class="btn-upload">Carica</button>
             </form>
@@ -177,15 +187,22 @@
                 </div>
                 <div class="controls">
                     <audio controls src="{{ url_for('serve_file', folder='saved', filename=file.name) }}"></audio>
+                    
                     <button type="button" class="btn-hw" onclick="fetch('{{ url_for('play_hw', folder='saved', filename=file.name) }}')">
-                        Riproduci su server
+                        Server 🔊
                     </button>
+
+                    <!-- Pulsante Download Locale -->
+                    <a href="{{ url_for('serve_file', folder='saved', filename=file.name) }}" download class="btn-link btn-download">
+                        Download ⬇️
+                    </a>
+
                     <a href="{{ url_for('delete_saved', filename=file.name) }}" class="btn-link btn-delete">Elimina</a>
                 </div>
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #999; font-style: italic;">Archivio vuoto.</p>
+            <p style="color: #999; font-style: italic;">L'archivio è vuoto.</p>
         {% endif %}
     </div>
 
