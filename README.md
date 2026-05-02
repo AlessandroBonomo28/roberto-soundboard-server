@@ -9,7 +9,7 @@ http soundboard server for roberto rest api
 ## Setup
 Requisiti
 
-- installa `mpg123`
+- installa `mpg123` per riprodurre mp3
 - installa drivers per respeaker
 
 ```
