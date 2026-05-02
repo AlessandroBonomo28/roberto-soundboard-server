@@ -1,6 +1,8 @@
 # roberto-soundboard-server
 http soundboard server for roberto rest api
 
+<img width="700" alt="Immagine 2026-05-03 010258" src="https://github.com/user-attachments/assets/b0303c01-d0ac-4a45-9025-14f3311aca39" />
+
 - interroga backend [restRoberto](https://github.com/TheTipo01/restRoberto)
 - carica mp3 e wav e riproducili quando vuoi su server
 - supporto per linux raspberry pi respeaker module (aplay per riprodurre wav e mpg123)
