@@ -15,7 +15,9 @@ DOWNLOAD_FOLDER = 'downloads'
 SAVED_FOLDER = 'saved'
 SETTINGS_FILE = 'settings.json'
 QUEUE_LEN = 3
-AUDIO_EXTENSIONS = ('.wav')
+
+# Aggiunto .mp3 alla tupla delle estensioni valide
+AUDIO_EXTENSIONS = ('.wav', '.mp3')
 
 for folder in [DOWNLOAD_FOLDER, SAVED_FOLDER]:
     if not os.path.exists(folder):
@@ -44,7 +46,8 @@ def save_settings(ip, port, token):
 def clean_old_downloads():
     files = []
     for f in os.listdir(DOWNLOAD_FOLDER):
-        if f.endswith(".wav"):
+        # Utilizza AUDIO_EXTENSIONS per gestire più formati, se necessario
+        if f.lower().endswith(AUDIO_EXTENSIONS):
             path = os.path.join(DOWNLOAD_FOLDER, f)
             files.append((path, os.path.getctime(path)))
     if len(files) > QUEUE_LEN:
@@ -56,7 +59,7 @@ def clean_old_downloads():
 def index():
     settings = load_settings()
     downloads = [{"name": f, "time": os.path.getctime(os.path.join(DOWNLOAD_FOLDER, f))} 
-                 for f in os.listdir(DOWNLOAD_FOLDER) if f.endswith(".wav")]
+                 for f in os.listdir(DOWNLOAD_FOLDER) if f.lower().endswith(AUDIO_EXTENSIONS)]
     saved = [{"name": f, "time": os.path.getctime(os.path.join(SAVED_FOLDER, f))} 
              for f in os.listdir(SAVED_FOLDER) if f.lower().endswith(AUDIO_EXTENSIONS)]
     
@@ -102,9 +105,19 @@ def play_hw(folder, filename):
         return '', 404
 
     current_os = platform.system()
+    # Ottiene l'estensione del file in minuscolo (es: '.mp3', '.wav')
+    ext = os.path.splitext(filepath)[1].lower()
+
     if current_os == "Linux":
-        cmd = ["aplay", "-D", "plughw:CARD=seeed2micvoicec,DEV=0", filepath]
+        # Selettore dinamico del player in base all'estensione
+        if ext == '.mp3':
+            cmd = ["mpg123", "-a", "plughw:CARD=seeed2micvoicec,DEV=0", filepath]
+        else:
+            cmd = ["aplay", "-D", "plughw:CARD=seeed2micvoicec,DEV=0", filepath]
     else:
+        # NOTA: Windows Media.SoundPlayer supporta solo i file .wav.
+        # Se provi a suonare un mp3 da Windows, lancerà probabilmente un'eccezione, 
+        # ma questo progetto gira principalmente su Raspberry (Linux).
         cmd = ["powershell", "-c", f"(New-Object Media.SoundPlayer '{filepath}').PlaySync()"]
 
     try:
