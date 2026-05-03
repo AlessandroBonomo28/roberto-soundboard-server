@@ -58,7 +58,24 @@ sudo systemctl enable server.service
 sudo nano /etc/systemd/system/button.service
 ```
 
-**servizio per spegnere il raspberry pi zero con il bottone integrato**
+### BTN SHUTDOWN con Respeaker
+per spegnere il raspberry pi zero w 2 quando si preme il pulsante sul modulo respeaker bisogna fare così:
+
+```
+sudo nano /etc/firmware/config.txt
+```
+
+e aggiungere una linea in fondo al file
+
+```
+[all]
+enable_uart=1
+dtoverlay=i2s-mmap
+dtparam=i2s=on
+# Questa è la riga magica da aggiungere:
+dtoverlay=gpio-shutdown,gpio_pin=17,active_low=1,gpio_pull=up
+```
+
 
 ### nota
 più si aggiungono suoni alla soundboard, più la pagina web diventa pesante perchè per ogni nuovo client che si collega, il raspberry deve inviare tutti i suoni salvati al client
